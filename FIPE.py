@@ -78,5 +78,4 @@ class FipeSpider(scrapy.Spider):
                                  meta={"formdata": formdata})
 
     def get_data(self, response):
-        data = json.loads(response.text)
-        yield data
+        yield json.loads(response.text)

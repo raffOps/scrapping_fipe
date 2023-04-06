@@ -6,11 +6,7 @@ from datetime import datetime
 from google.cloud import storage
 import pandas as pd
 
-if os.getenv("BUCKET"):
-    BUCKET = os.getenv("BUCKET")
-
-else:
-    BUCKET = "fipe-teste"
+BUCKET = os.getenv("BUCKET") or "fipe-teste"
 
 
 def extract_fipe(year=2018, months=[4]):
@@ -25,10 +21,7 @@ def extract_fipe(year=2018, months=[4]):
 
 
 def upload_fipe(year=2018, files=["2018-4.csv"]):
-    dfs = []
-    for file in files:
-        dfs.append(pd.read_csv(file))
-
+    dfs = [pd.read_csv(file) for file in files]
     df = pd.concat(dfs)
     filename = f"{year}.parquet"
     df.to_parquet(path=filename, compression="gzip")
