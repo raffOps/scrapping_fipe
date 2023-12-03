@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "scrapping-fipe"
+version = "0.1.0"
+description = ""
+readme = "README.md"
+packages = [{include = "scrapping_fipe"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+scrapy = "^2.11.0"
+pandas = "^2.1.3"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

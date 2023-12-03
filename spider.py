@@ -1,7 +1,13 @@
 # -*- coding: utf-8 -*-
 import json
+from datetime import datetime
+from typing import Any
 
+import pytz
 import scrapy
+
+list_month = "janeiro fevereiro março abril maio junho julho agosto \
+                      setembro outubro novembro dezembro".split()
 
 
 class FipeSpider(scrapy.Spider):
@@ -15,15 +21,17 @@ class FipeSpider(scrapy.Spider):
         'Content-Type': 'application/json; charset=UTF-8'
     }
     custom_settings = {
-        #'LOG_LEVEL': 'INFO',
-        'DEFAULT_REQUEST_HEADERS': headers
+        'LOG_LEVEL': 'DEBUG',
+        'DEFAULT_REQUEST_HEADERS': headers,
+        'DOWNLOAD_DELAY': 0.1
     }
 
-    def __init__(self, year, month):
-        list_month = "janeiro fevereiro março abril maio junho julho agosto \
-                      setembro outubro novembro dezembro".split()
-        month = list_month[int(month)]
-        self.reference = f"{month}/{year} "
+    def __init__(self, year: str, month: str, **kwargs: Any):
+        super().__init__(**kwargs)
+        self.year = int(year)
+        self.month = int(month)
+        month_name = list_month[int(month)]
+        self.reference = f"{month_name}/{year} "
 
     def parse(self, response):
         yield scrapy.Request(url="https://veiculos.fipe.org.br/api/veiculos//ConsultarTabelaDeReferencia",
@@ -40,7 +48,7 @@ class FipeSpider(scrapy.Spider):
             yield scrapy.Request(url="https://veiculos.fipe.org.br/api/veiculos/ConsultarMarcas",
                                  callback=self.brands,
                                  method="POST", body=json.dumps(formdata),
-                                 meta={"formdata":formdata.copy()})
+                                 meta={"formdata": formdata.copy()})
 
     def brands(self, response):
         brands_table = json.loads(response.text)
@@ -71,6 +79,7 @@ class FipeSpider(scrapy.Spider):
             formdata["anoModelo"], formdata["codigoTipoCombustivel"] = ano["Value"].split("-")
             formdata["tipoVeiculo"] = "carro"
             formdata["tipoConsulta"] = "tradicional"
+            formdata['data_consulta'] = datetime.now(pytz.timezone('UTC')).strftime("%Y-%m-%d %H:%M:%S")
             yield scrapy.Request(url="https://veiculos.fipe.org.br/api/veiculos//ConsultarValorComTodosParametros",
                                  callback=self.get_data,
                                  method="POST",
@@ -78,5 +87,9 @@ class FipeSpider(scrapy.Spider):
                                  meta={"formdata": formdata})
 
     def get_data(self, response):
+        formdata = response.meta["formdata"]
         data = json.loads(response.text)
+        data["ano"] = self.year
+        data["mes"] = self.month
+        data["data_consulta"] = formdata["data_consulta"]
         yield data
